@@ -32,6 +32,7 @@ public sealed partial class AdminVerbSystem
     private static readonly EntProtoId ParadoxCloneRuleId = "ParadoxCloneSpawn";
     private static readonly EntProtoId DefaultWizardRule = "Wizard";
     private static readonly EntProtoId DefaultNinjaRule = "NinjaSpawn";
+    private static readonly EntProtoId DefaultMalfunctionAiRule = "MalfunctionAi";
     private static readonly ProtoId<StartingGearPrototype> PirateGearId = "PirateGear";
 
     // All antag verbs have names so invokeverb works.
@@ -222,6 +223,21 @@ public sealed partial class AdminVerbSystem
             Message = string.Join(": ", ninjaName, Loc.GetString("admin-verb-make-space-ninja")),
         };
         args.Verbs.Add(ninja);
+
+        var malfAiName = Loc.GetString("admin-verb-text-make-malfunction-ai");
+        Verb malfAi = new()
+        {
+            Text = malfAiName,
+            Category = VerbCategory.Antag,
+            Icon = new SpriteSpecifier.Rsi(new("/Textures/Interface/Misc/job_icons.rsi"), "StationAi"),
+            Act = () =>
+            {
+                _antag.ForceMakeAntag<MalfunctionAiRuleComponent>(targetPlayer, DefaultMalfunctionAiRule);
+            },
+            Impact = LogImpact.High,
+            Message = string.Join(": ", malfAiName, Loc.GetString("admin-verb-make-malfunction-ai")),
+        };
+        args.Verbs.Add(malfAi);
 
         if (HasComp<HumanoidProfileComponent>(args.Target)) // only humanoids can be cloned
             args.Verbs.Add(paradox);

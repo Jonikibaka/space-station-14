@@ -3,8 +3,8 @@
 - type: entity
   parent: BaseAction
   id: ActionMalfHackApc
-  name: action-malf-hack-apc-name
-  description: action-malf-hack-apc-description
+  name: Hack APC
+  description: Forces the APC's breaker off and dumps half of its battery. Costs 25 processing power.
   components:
   - type: Action
     priority: -1
@@ -22,8 +22,8 @@
 - type: entity
   parent: BaseAction
   id: ActionMalfOverloadMachine
-  name: action-malf-overload-machine-name
-  description: action-malf-overload-machine-description
+  name: Overload Machine
+  description: Channels excess current into a powered machine until it detonates. Costs 40 processing power.
   components:
   - type: Action
     priority: -2
@@ -39,8 +39,8 @@
 - type: entity
   parent: BaseAction
   id: ActionMalfBlackout
-  name: action-malf-blackout-name
-  description: action-malf-blackout-description
+  name: Station Blackout
+  description: Trips every APC on the station at once. Costs 75 processing power.
   components:
   - type: Action
     priority: -3
@@ -53,8 +53,8 @@
 - type: entity
   parent: BaseAction
   id: ActionMalfDoomsday
-  name: action-malf-doomsday-name
-  description: action-malf-doomsday-description
+  name: Arm Doomsday Device
+  description: Begins an irreversible self-destruct sequence from your core. Single use. Costs 150 processing power.
   components:
   - type: Action
     priority: -10

@@ -17,9 +17,3 @@ malfunction-ai-announcement-doomsday-tick =
     Self-destruct sequence: { $time } seconds remaining.
 
 objective-issuer-malfunction-ai = [color=#c832e6]Corrupted Core[/color]
-
-malfunction-ai-objective-survive-name = Survive
-malfunction-ai-objective-survive-description = Stay alive and operational until the end of the shift.
-
-malfunction-ai-objective-doomsday-name = Detonate the Doomsday device
-malfunction-ai-objective-doomsday-description = Successfully arm and detonate the Doomsday device, eliminating all life on the station.

@@ -13,8 +13,8 @@
 - type: entity
   parent: [BaseMalfunctionAiObjective, BaseSurviveObjective]
   id: MalfunctionAiSurviveObjective
-  name: malfunction-ai-objective-survive-name
-  description: malfunction-ai-objective-survive-description
+  name: Survive
+  description: Stay alive and operational until the end of the shift.
   components:
   - type: Objective
     icon:
@@ -24,8 +24,8 @@
 - type: entity
   parent: [BaseMalfunctionAiObjective, BaseCodeObjective]
   id: MalfunctionAiDoomsdayObjective
-  name: malfunction-ai-objective-doomsday-name
-  description: malfunction-ai-objective-doomsday-description
+  name: Detonate the Doomsday device
+  description: Successfully arm and detonate the Doomsday device, eliminating all life on the station.
   components:
   - type: Objective
     icon:

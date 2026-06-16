@@ -17,9 +17,3 @@ malfunction-ai-announcement-doomsday-tick =
     Последовательность самоуничтожения: осталось { $time } секунд.
 
 objective-issuer-malfunction-ai = [color=#c832e6]Повреждённое ядро[/color]
-
-malfunction-ai-objective-survive-name = Выжить
-malfunction-ai-objective-survive-description = Сохранить работоспособность до конца смены.
-
-malfunction-ai-objective-doomsday-name = Активировать Устройство Судного дня
-malfunction-ai-objective-doomsday-description = Успешно запустить и довести до детонации Устройство Судного дня, уничтожив всё живое на станции.
