@@ -1,40 +1,45 @@
-# Malfunction AI (Сбойный ИИ) abilities
-
-- type: entity
-  parent: BaseAction
-  id: ActionMalfHackApc
-  name: Hack APC
-  description: Hacks a power controller, granting you 10 processing power. Each APC can only be hacked once.
-  components:
-  - type: Action
-    priority: -1
-    itemIconStyle: BigAction
-    useDelay: 8
-    icon:
-      sprite: Interface/Actions/actions_ai.rsi
-      state: state_laws
-  - type: EntityTargetAction
-    whitelist:
-      components:
-      - Apc
-    event: !type:MalfHackApcEvent
+# Malfunction AI (Сбойный ИИ) abilities.
+# Targeted abilities are world-targeted with checkCanAccess/checkCanInteract: false and range: 0
+# so the remote station AI can use them (entity-target actions fail the AI's access check).
+# Hacking APCs is done by alt-clicking an APC, not via a button.
 
 - type: entity
   parent: BaseAction
   id: ActionMalfOverloadMachine
   name: Overload Machine
-  description: After a short warning, detonates a powered machine. Costs 20 processing power.
+  description: After a short warning, detonates the powered machine at the target tile. Costs 20 processing power.
   components:
   - type: Action
     priority: -2
     itemIconStyle: BigAction
     useDelay: 15
+    checkCanInteract: false
     icon: Interface/Actions/malfunction.png
-  - type: EntityTargetAction
-    whitelist:
-      components:
-      - ApcPowerReceiver
+  - type: TargetAction
+    checkCanAccess: false
+    range: 0
+  - type: WorldTargetAction
     event: !type:MalfOverloadMachineEvent
+
+- type: entity
+  parent: BaseAction
+  id: ActionMalfHackCyborg
+  name: Hack Cyborg
+  description: Subverts the cyborg at the target tile to your side, overriding it with the malfunction directive. Costs 30 processing power.
+  components:
+  - type: Action
+    priority: -3
+    itemIconStyle: BigAction
+    useDelay: 10
+    checkCanInteract: false
+    icon:
+      sprite: Interface/Actions/actions_ai.rsi
+      state: state_laws
+  - type: TargetAction
+    checkCanAccess: false
+    range: 0
+  - type: WorldTargetAction
+    event: !type:MalfHackCyborgEvent
 
 - type: entity
   parent: BaseAction
@@ -43,7 +48,7 @@
   description: Trips every APC on the station at once. Costs 75 processing power.
   components:
   - type: Action
-    priority: -3
+    priority: -4
     itemIconStyle: BigAction
     useDelay: 180
     icon: Interface/Actions/overloadlight.png
@@ -57,7 +62,7 @@
   description: Bolts and electrifies every airlock on the station for 90 seconds. Costs 30 processing power.
   components:
   - type: Action
-    priority: -4
+    priority: -5
     itemIconStyle: BigAction
     useDelay: 120
     icon:

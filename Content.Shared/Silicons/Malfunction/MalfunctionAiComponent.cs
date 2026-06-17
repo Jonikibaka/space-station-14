@@ -28,11 +28,17 @@ public sealed partial class MalfunctionAiComponent : Component
     public FixedPoint2 MaxProcessingPower = 1000;
 
     /// <summary>
-    /// Processing power regenerated per second. Canonically the AI gains power from APCs, not passively,
-    /// so this defaults to zero.
+    /// Processing power regenerated per second, up to <see cref="PassivePowerCap"/>. Beyond that cap
+    /// power only comes from hacking APCs.
     /// </summary>
     [DataField, ViewVariables(VVAccess.ReadWrite)]
-    public FixedPoint2 PowerPerSecond = 0;
+    public FixedPoint2 PowerPerSecond = 1;
+
+    /// <summary>
+    /// Passive regen only fills processing power up to this value.
+    /// </summary>
+    [DataField, ViewVariables(VVAccess.ReadWrite)]
+    public FixedPoint2 PassivePowerCap = 110;
 
     /// <summary>
     /// Server-side accumulator for passive power regen.
@@ -61,6 +67,9 @@ public sealed partial class MalfunctionAiComponent : Component
 
     [DataField]
     public FixedPoint2 LockdownCost = 30;
+
+    [DataField]
+    public FixedPoint2 HackCyborgCost = 30;
 
     /// <summary>
     /// Cost to arm the Doomsday device.
@@ -130,11 +139,12 @@ public sealed partial class MalfunctionAiComponent : Component
     [DataField]
     public List<EntityUid> ActionEntities = new();
 
+    // Hack APC is done by alt-clicking an APC, not via a button.
     [DataField]
     public List<EntProtoId> Actions = new()
     {
-        "ActionMalfHackApc",
         "ActionMalfOverloadMachine",
+        "ActionMalfHackCyborg",
         "ActionMalfBlackout",
         "ActionMalfLockdown",
         "ActionMalfDoomsday",

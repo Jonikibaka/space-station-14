@@ -3,7 +3,9 @@ using Content.Server.Chat.Systems;
 using Content.Server.Explosion.EntitySystems;
 using Content.Server.Power.Components;
 using Content.Server.Power.EntitySystems;
+using Content.Server.Silicons.Laws;
 using Content.Server.Station.Systems;
+using Content.Shared.Silicons.Borgs.Components;
 using Content.Shared.Alert;
 using Content.Shared.Doors.Components;
 using Content.Shared.Doors.Systems;
@@ -11,6 +13,7 @@ using Content.Shared.Electrocution;
 using Content.Shared.FixedPoint;
 using Content.Shared.Popups;
 using Content.Shared.Silicons.Malfunction;
+using Content.Shared.Verbs;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Map.Components;
@@ -31,11 +34,12 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
     [Dependency] private SharedAudioSystem _audio = default!;
     [Dependency] private ChatSystem _chat = default!;
     [Dependency] private ExplosionSystem _explosion = default!;
+    [Dependency] private SiliconLawSystem _law = default!;
     [Dependency] private SharedDoorSystem _doors = default!;
     [Dependency] private SharedElectrocutionSystem _electrify = default!;
     [Dependency] private SharedPopupSystem _popups = default!;
     [Dependency] private StationSystem _station = default!;
-    [Dependency] private TransformSystem _xform = default!;
+    [Dependency] private EntityLookupSystem _lookup = default!;
     [Dependency] private IGameTiming _timing = default!;
 
     public override void Initialize()
@@ -47,9 +51,69 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
 
         SubscribeLocalEvent<MalfunctionAiComponent, MalfHackApcEvent>(OnHackApc);
         SubscribeLocalEvent<MalfunctionAiComponent, MalfOverloadMachineEvent>(OnOverloadMachine);
+        SubscribeLocalEvent<MalfunctionAiComponent, MalfHackCyborgEvent>(OnHackCyborg);
         SubscribeLocalEvent<MalfunctionAiComponent, MalfBlackoutEvent>(OnBlackout);
         SubscribeLocalEvent<MalfunctionAiComponent, MalfLockdownEvent>(OnLockdown);
         SubscribeLocalEvent<MalfunctionAiComponent, MalfDoomsdayEvent>(OnDoomsday);
+
+        // Alt-click fallbacks (in addition to the action-bar buttons): the AI can also hack/overload
+        // by alt-clicking the target directly.
+        SubscribeLocalEvent<ApcComponent, GetVerbsEvent<AlternativeVerb>>(OnApcAltVerb);
+        SubscribeLocalEvent<ApcPowerReceiverComponent, GetVerbsEvent<AlternativeVerb>>(OnMachineAltVerb);
+        SubscribeLocalEvent<BorgChassisComponent, GetVerbsEvent<AlternativeVerb>>(OnCyborgAltVerb);
+    }
+
+    private void OnCyborgAltVerb(Entity<BorgChassisComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        var user = args.User;
+        if (!TryComp<MalfunctionAiComponent>(user, out var malf))
+            return;
+
+        if (HasComp<MalfHackedCyborgComponent>(ent.Owner))
+            return;
+
+        var target = ent.Owner;
+        args.Verbs.Add(new AlternativeVerb
+        {
+            Text = Loc.GetString("malfunction-ai-verb-hack-cyborg"),
+            Act = () => TryHackCyborg((user, malf), target),
+        });
+    }
+
+    private void OnApcAltVerb(Entity<ApcComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        var user = args.User;
+        if (!TryComp<MalfunctionAiComponent>(user, out var malf))
+            return;
+
+        if (HasComp<MalfHackedApcComponent>(ent.Owner))
+            return;
+
+        var target = ent.Owner;
+        args.Verbs.Add(new AlternativeVerb
+        {
+            Text = Loc.GetString("malfunction-ai-verb-hack-apc"),
+            Priority = 10,
+            Act = () => TryHackApc((user, malf), target),
+        });
+    }
+
+    private void OnMachineAltVerb(Entity<ApcPowerReceiverComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        var user = args.User;
+        if (!TryComp<MalfunctionAiComponent>(user, out var malf))
+            return;
+
+        // Don't overload yourself or APCs (those get hacked instead).
+        if (ent.Owner == user || HasComp<ApcComponent>(ent.Owner) || HasComp<MalfPendingOverloadComponent>(ent.Owner))
+            return;
+
+        var target = ent.Owner;
+        args.Verbs.Add(new AlternativeVerb
+        {
+            Text = Loc.GetString("malfunction-ai-verb-overload-machine"),
+            Act = () => TryOverloadMachine((user, malf), target),
+        });
     }
 
     private void OnMalfInit(Entity<MalfunctionAiComponent> ent, ref ComponentInit args)
@@ -83,8 +147,8 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
         var query = EntityQueryEnumerator<MalfunctionAiComponent>();
         while (query.MoveNext(out var uid, out var comp))
         {
-            // Optional passive regen (defaults to zero; income comes from APCs).
-            if (comp.PowerPerSecond > 0 && comp.ProcessingPower < comp.MaxProcessingPower)
+            // Passive regen, but only up to the passive cap; further power comes from hacking APCs.
+            if (comp.PowerPerSecond > 0 && comp.ProcessingPower < comp.PassivePowerCap)
             {
                 comp.Accumulator += frameTime;
                 if (comp.Accumulator >= 1f)
@@ -92,7 +156,7 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
                     var ticks = (int) comp.Accumulator;
                     comp.Accumulator -= ticks;
                     comp.ProcessingPower = FixedPoint2.Min(
-                        comp.MaxProcessingPower,
+                        comp.PassivePowerCap,
                         comp.ProcessingPower + comp.PowerPerSecond * ticks);
                     Dirty(uid, comp);
                 }
@@ -129,7 +193,7 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
     {
         if (ent.Comp.ProcessingPower < cost)
         {
-            _popups.PopupEntity(Loc.GetString("malfunction-ai-popup-not-enough-power"), ent.Owner, ent.Owner);
+            _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-not-enough-power"), ent.Owner);
             return false;
         }
 
@@ -143,30 +207,36 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
         if (args.Handled)
             return;
 
-        if (!HasComp<ApcComponent>(args.Target))
+        if (TryHackApc(ent, args.Target))
+            args.Handled = true;
+    }
+
+    private bool TryHackApc(Entity<MalfunctionAiComponent> ent, EntityUid target)
+    {
+        if (!HasComp<ApcComponent>(target))
         {
-            _popups.PopupEntity(Loc.GetString("malfunction-ai-popup-invalid-target"), ent.Owner, ent.Owner);
-            return;
+            _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-invalid-target"), ent.Owner);
+            return false;
         }
 
-        if (HasComp<MalfHackedApcComponent>(args.Target))
+        if (HasComp<MalfHackedApcComponent>(target))
         {
-            _popups.PopupEntity(Loc.GetString("malfunction-ai-popup-apc-already-hacked"), ent.Owner, ent.Owner);
-            return;
+            _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-apc-already-hacked"), ent.Owner);
+            return false;
         }
 
         // Hacking grants processing power rather than costing it.
-        AddComp<MalfHackedApcComponent>(args.Target);
+        AddComp<MalfHackedApcComponent>(target);
         ent.Comp.HackedApcCount++;
         ent.Comp.ProcessingPower = FixedPoint2.Min(ent.Comp.MaxProcessingPower, ent.Comp.ProcessingPower + ent.Comp.CpuPerApc);
         Dirty(ent);
 
-        _popups.PopupEntity(
+        _popups.PopupCursor(
             Loc.GetString("malfunction-ai-popup-hack-apc-success",
                 ("power", ent.Comp.ProcessingPower.Int()),
                 ("count", ent.Comp.HackedApcCount)),
-            ent.Owner, ent.Owner);
-        args.Handled = true;
+            ent.Owner);
+        return true;
     }
 
     private void OnOverloadMachine(Entity<MalfunctionAiComponent> ent, ref MalfOverloadMachineEvent args)
@@ -174,22 +244,94 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
         if (args.Handled)
             return;
 
-        if (args.Target == ent.Owner || HasComp<MalfPendingOverloadComponent>(args.Target))
-            return;
+        foreach (var candidate in _lookup.GetEntitiesInRange(args.Target, 0.75f))
+        {
+            if (candidate == ent.Owner
+                || !HasComp<ApcPowerReceiverComponent>(candidate)
+                || HasComp<ApcComponent>(candidate)
+                || HasComp<MalfPendingOverloadComponent>(candidate))
+                continue;
+
+            if (TryOverloadMachine(ent, candidate))
+            {
+                args.Handled = true;
+                return;
+            }
+        }
+
+        _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-invalid-target"), ent.Owner);
+    }
+
+    private bool TryOverloadMachine(Entity<MalfunctionAiComponent> ent, EntityUid target)
+    {
+        if (target == ent.Owner || HasComp<MalfPendingOverloadComponent>(target))
+            return false;
 
         if (!TrySpendPower(ent, ent.Comp.OverloadMachineCost))
-            return;
+            return false;
 
-        var pending = AddComp<MalfPendingOverloadComponent>(args.Target);
+        var pending = AddComp<MalfPendingOverloadComponent>(target);
         pending.TriggerAt = _timing.CurTime + ent.Comp.OverloadDelay;
         pending.Intensity = ent.Comp.OverloadIntensity;
         pending.MaxTileIntensity = ent.Comp.OverloadMaxTileIntensity;
         pending.Source = ent.Owner;
 
-        _audio.PlayPvs(ent.Comp.OverloadWarningSound, args.Target);
+        _audio.PlayPvs(ent.Comp.OverloadWarningSound, target);
 
-        _popups.PopupEntity(Loc.GetString("malfunction-ai-popup-overload-success"), ent.Owner, ent.Owner);
-        args.Handled = true;
+        _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-overload-success"), ent.Owner);
+        return true;
+    }
+
+    private void OnHackCyborg(Entity<MalfunctionAiComponent> ent, ref MalfHackCyborgEvent args)
+    {
+        if (args.Handled)
+            return;
+
+        foreach (var candidate in _lookup.GetEntitiesInRange(args.Target, 0.75f))
+        {
+            if (!HasComp<BorgChassisComponent>(candidate))
+                continue;
+
+            if (TryHackCyborg(ent, candidate))
+            {
+                args.Handled = true;
+                return;
+            }
+        }
+
+        _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-invalid-cyborg"), ent.Owner);
+    }
+
+    private bool TryHackCyborg(Entity<MalfunctionAiComponent> ent, EntityUid target)
+    {
+        if (!HasComp<BorgChassisComponent>(target))
+        {
+            _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-invalid-cyborg"), ent.Owner);
+            return false;
+        }
+
+        if (HasComp<MalfHackedCyborgComponent>(target))
+        {
+            _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-cyborg-already-hacked"), ent.Owner);
+            return false;
+        }
+
+        if (!TrySpendPower(ent, ent.Comp.HackCyborgCost))
+            return false;
+
+        // Keep the borg's normal laws but prepend the hidden malfunction law 0, flagging it as an antag.
+        if (!_law.AddMalfunctionLaw(target, ensureSubvertedRole: true))
+        {
+            // Already subverted (e.g. emagged); refund and bail.
+            ent.Comp.ProcessingPower += ent.Comp.HackCyborgCost;
+            Dirty(ent);
+            _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-cyborg-already-hacked"), ent.Owner);
+            return false;
+        }
+
+        AddComp<MalfHackedCyborgComponent>(target);
+        _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-hack-cyborg-success"), ent.Owner);
+        return true;
     }
 
     private void OnBlackout(Entity<MalfunctionAiComponent> ent, ref MalfBlackoutEvent args)
@@ -218,7 +360,7 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
 
         AnnounceFromAi(ent.Owner, Loc.GetString("malfunction-ai-announcement-blackout"));
 
-        _popups.PopupEntity(Loc.GetString("malfunction-ai-popup-blackout-success", ("count", count)), ent.Owner, ent.Owner);
+        _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-blackout-success", ("count", count)), ent.Owner);
         args.Handled = true;
     }
 
@@ -229,7 +371,7 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
 
         if (ent.Comp.LockdownEndTime != null)
         {
-            _popups.PopupEntity(Loc.GetString("malfunction-ai-popup-lockdown-active"), ent.Owner, ent.Owner);
+            _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-lockdown-active"), ent.Owner);
             return;
         }
 
@@ -259,7 +401,7 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
 
         AnnounceFromAi(ent.Owner, Loc.GetString("malfunction-ai-announcement-lockdown"));
 
-        _popups.PopupEntity(Loc.GetString("malfunction-ai-popup-lockdown-success", ("count", ent.Comp.LockedDoors.Count)), ent.Owner, ent.Owner);
+        _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-lockdown-success", ("count", ent.Comp.LockedDoors.Count)), ent.Owner);
         args.Handled = true;
     }
 
@@ -286,17 +428,17 @@ public sealed partial class MalfunctionAiSystem : EntitySystem
 
         if (ent.Comp.DoomsdayUsed)
         {
-            _popups.PopupEntity(Loc.GetString("malfunction-ai-popup-doomsday-already-used"), ent.Owner, ent.Owner);
+            _popups.PopupCursor(Loc.GetString("malfunction-ai-popup-doomsday-already-used"), ent.Owner);
             return;
         }
 
         if (ent.Comp.HackedApcCount < ent.Comp.DoomsdayRequiredApcs)
         {
-            _popups.PopupEntity(
+            _popups.PopupCursor(
                 Loc.GetString("malfunction-ai-popup-doomsday-need-apcs",
                     ("required", ent.Comp.DoomsdayRequiredApcs),
                     ("current", ent.Comp.HackedApcCount)),
-                ent.Owner, ent.Owner);
+                ent.Owner);
             return;
         }
 

@@ -16,6 +16,8 @@ malfunction-ai-announcement-doomsday-armed =
     Расчётное время до детонации: { $time } секунд. Всем подразделениям — немедленно локализовать ИИ.
 malfunction-ai-announcement-doomsday-tick =
     Последовательность самоуничтожения: осталось { $time } секунд.
+malfunction-ai-announcement-doomsday-defused =
+    Последовательность самоуничтожения прервана. Устройство Судного дня ядра ИИ отключено.
 
 objective-issuer-malfunction-ai = [color=#c832e6]Повреждённое ядро[/color]
 

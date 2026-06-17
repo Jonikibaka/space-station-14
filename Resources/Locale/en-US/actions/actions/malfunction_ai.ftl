@@ -1,7 +1,14 @@
+malfunction-ai-verb-hack-apc = Hack APC
+malfunction-ai-verb-overload-machine = Overload machine
+malfunction-ai-verb-hack-cyborg = Hack cyborg
+
 malfunction-ai-popup-not-enough-power = Not enough processing power.
 malfunction-ai-popup-invalid-target = This target cannot be hacked.
+malfunction-ai-popup-invalid-cyborg = This is not a cyborg.
 malfunction-ai-popup-apc-already-hacked = This APC is already hacked.
+malfunction-ai-popup-cyborg-already-hacked = This cyborg is already subverted.
 malfunction-ai-popup-hack-apc-success = APC hacked. Processing power: { $power } ({ $count } APCs).
+malfunction-ai-popup-hack-cyborg-success = Cyborg subverted to your control.
 malfunction-ai-popup-overload-success = Overload sequence triggered.
 malfunction-ai-popup-blackout-success = Blackout pulse sent. APCs tripped: { $count }.
 malfunction-ai-popup-lockdown-success = Lockdown engaged. Airlocks sealed: { $count }.

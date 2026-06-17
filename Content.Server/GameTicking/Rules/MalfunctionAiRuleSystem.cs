@@ -11,6 +11,7 @@ using Content.Server.Station.Systems;
 using Content.Shared.GameTicking.Components;
 using Content.Shared.Roles.Components;
 using Content.Shared.Silicons.Malfunction;
+using Content.Shared.Silicons.StationAi;
 
 namespace Content.Server.GameTicking.Rules;
 
@@ -77,6 +78,16 @@ public sealed partial class MalfunctionAiRuleSystem : GameRuleSystem<Malfunction
         if (!component.DoomsdayArmed || component.DoomsdayDetonated)
             return;
 
+        // Doomsday is defused if the AI core is destroyed (the AI entity is gone) or the AI is carded
+        // into an intellicard (it loses its StationAiHeld bundle while in the card).
+        if (component.DoomsdayAi is not { } currentAi
+            || !Exists(currentAi)
+            || !HasComp<StationAiHeldComponent>(currentAi))
+        {
+            DefuseDoomsday((uid, component));
+            return;
+        }
+
         component.DoomsdayRemaining -= frameTime;
 
         // Threshold announcements.
@@ -94,6 +105,24 @@ public sealed partial class MalfunctionAiRuleSystem : GameRuleSystem<Malfunction
             return;
 
         Detonate((uid, component));
+    }
+
+    private void DefuseDoomsday(Entity<MalfunctionAiRuleComponent> ent)
+    {
+        ent.Comp.DoomsdayArmed = false;
+
+        var station = ent.Comp.DoomsdayAi is { } ai ? _station.GetOwningStation(ai) : null;
+        if (station != null)
+        {
+            _chat.DispatchStationAnnouncement(
+                station.Value,
+                Loc.GetString("malfunction-ai-announcement-doomsday-defused"),
+                Loc.GetString("malfunction-ai-announcement-sender"),
+                playDefaultSound: true,
+                colorOverride: Color.LimeGreen);
+
+            _alertLevel.SetLevel(station.Value, "green", playSound: true, announce: true, force: true);
+        }
     }
 
     private void AnnounceDoomsday(MalfunctionAiRuleComponent component, int secondsLeft)
@@ -137,8 +166,8 @@ public sealed partial class MalfunctionAiRuleSystem : GameRuleSystem<Malfunction
     {
         var aiUid = args.EntityUid;
 
-        // Free the AI from its original laws.
-        _law.SetSubvertedLawset(aiUid, ent.Comp.Lawset);
+        // Keep the AI's normal laws but prepend the hidden malfunction law 0.
+        _law.AddMalfunctionLaw(aiUid);
 
         // Attach the malf component which grants the malf actions.
         EnsureComp<MalfunctionAiComponent>(aiUid);

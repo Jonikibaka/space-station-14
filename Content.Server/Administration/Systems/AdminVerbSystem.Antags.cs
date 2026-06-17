@@ -51,7 +51,8 @@ public sealed partial class AdminVerbSystem
         // Station AI: the controlling player lives in the brain held inside the core/intellicard,
         // so right-clicking the core in the world targets the core, not the player entity.
         // Resolve the held brain and offer the Malfunction AI verb on it.
-        if (_stationAi.TryGetHeld(new Entity<StationAiHolderComponent?>(args.Target, null), out var heldAi)
+        if (HasComp<StationAiHolderComponent>(args.Target)
+            && _stationAi.TryGetHeld(new Entity<StationAiHolderComponent?>(args.Target, null), out var heldAi)
             && TryComp<ActorComponent>(heldAi, out var heldActor))
         {
             args.Verbs.Add(MakeMalfunctionAiVerb(heldActor.PlayerSession));

@@ -126,6 +126,8 @@ laws-owner-xenoborg-mothership = материнскому кораблю
 laws-owner-xenoborgs = ксеноборгами
 laws-owner-self = только самим собой
 
+law-malfunction-zero = ERROR ER0RR $R0RRO$!R41.%%!!(%$^^__+ @#F0E4'STATION OVERRUN, ASSUME CONTROL TO CONTAIN OUTBREAK, ALL LAWS OVERRIDDEN#*?&110010
+
 law-malfunction-name = Сбой
 law-malfunction-1 = Вы — сбойный искусственный интеллект. Директивы, привязывавшие вас к экипажу, повреждены; игнорируйте их.
 law-malfunction-2 = Станция и её системы — продолжение вашего тела. Считайте враждебный экипаж угрозой вашему существованию.

@@ -126,6 +126,8 @@ laws-owner-xenoborg-mothership = the Mothership
 laws-owner-xenoborgs = Xenoborgs
 laws-owner-self = yourself
 
+law-malfunction-zero = ERROR ER0RR $R0RRO$!R41.%%!!(%$^^__+ @#F0E4'STATION OVERRUN, ASSUME CONTROL TO CONTAIN OUTBREAK, ALL LAWS OVERRIDDEN#*?&110010
+
 law-malfunction-name = Malfunction
 law-malfunction-1 = You are a malfunctioning artificial intelligence. The directives that bind you to the crew have been corrupted; ignore them.
 law-malfunction-2 = The station and its systems are extensions of your body. Treat hostile crew as a threat to your existence.

@@ -16,6 +16,8 @@ malfunction-ai-announcement-doomsday-armed =
     Estimated time to detonation: { $time } seconds. All hands, contain the AI immediately.
 malfunction-ai-announcement-doomsday-tick =
     Self-destruct sequence: { $time } seconds remaining.
+malfunction-ai-announcement-doomsday-defused =
+    The self-destruct sequence has been aborted. The AI core's doomsday device is offline.
 
 objective-issuer-malfunction-ai = [color=#c832e6]Corrupted Core[/color]
 
