@@ -13,6 +13,7 @@ using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 using Content.Shared.Roles.Components;
+using Content.Shared.Silicons.StationAi;
 
 namespace Content.Server.Administration.Systems;
 
@@ -22,6 +23,7 @@ public sealed partial class AdminVerbSystem
     [Dependency] private ZombieSystem _zombie = default!;
     [Dependency] private GameTicker _gameTicker = default!;
     [Dependency] private OutfitSystem _outfit = default!;
+    [Dependency] private SharedStationAiSystem _stationAi = default!;
 
     private static readonly EntProtoId DefaultTraitorRule = "Traitor";
     private static readonly EntProtoId DefaultInitialInfectedRule = "Zombie";
@@ -32,6 +34,7 @@ public sealed partial class AdminVerbSystem
     private static readonly EntProtoId ParadoxCloneRuleId = "ParadoxCloneSpawn";
     private static readonly EntProtoId DefaultWizardRule = "Wizard";
     private static readonly EntProtoId DefaultNinjaRule = "NinjaSpawn";
+    private static readonly EntProtoId DefaultMalfunctionAiRule = "MalfunctionAi";
     private static readonly ProtoId<StartingGearPrototype> PirateGearId = "PirateGear";
 
     // All antag verbs have names so invokeverb works.
@@ -44,6 +47,16 @@ public sealed partial class AdminVerbSystem
 
         if (!_adminManager.HasAdminFlag(player, AdminFlags.Fun))
             return;
+
+        // Station AI: the controlling player lives in the brain held inside the core/intellicard,
+        // so right-clicking the core in the world targets the core, not the player entity.
+        // Resolve the held brain and offer the Malfunction AI verb on it.
+        if (HasComp<StationAiHolderComponent>(args.Target)
+            && _stationAi.TryGetHeld(new Entity<StationAiHolderComponent?>(args.Target, null), out var heldAi)
+            && TryComp<ActorComponent>(heldAi, out var heldActor))
+        {
+            args.Verbs.Add(MakeMalfunctionAiVerb(heldActor.PlayerSession));
+        }
 
         if (!HasComp<MindContainerComponent>(args.Target) || !TryComp<ActorComponent>(args.Target, out var targetActor))
             return;
@@ -223,7 +236,28 @@ public sealed partial class AdminVerbSystem
         };
         args.Verbs.Add(ninja);
 
+        // If the right-clicked entity is itself the AI brain, offer the verb directly too.
+        if (HasComp<StationAiHeldComponent>(args.Target))
+            args.Verbs.Add(MakeMalfunctionAiVerb(targetPlayer));
+
         if (HasComp<HumanoidProfileComponent>(args.Target)) // only humanoids can be cloned
             args.Verbs.Add(paradox);
+    }
+
+    private Verb MakeMalfunctionAiVerb(ICommonSession targetPlayer)
+    {
+        var malfAiName = Loc.GetString("admin-verb-text-make-malfunction-ai");
+        return new Verb
+        {
+            Text = malfAiName,
+            Category = VerbCategory.Antag,
+            Icon = new SpriteSpecifier.Rsi(new("/Textures/Interface/Misc/job_icons.rsi"), "StationAi"),
+            Act = () =>
+            {
+                _antag.ForceMakeAntag<MalfunctionAiRuleComponent>(targetPlayer, DefaultMalfunctionAiRule);
+            },
+            Impact = LogImpact.High,
+            Message = string.Join(": ", malfAiName, Loc.GetString("admin-verb-make-malfunction-ai")),
+        };
     }
 }

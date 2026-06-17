@@ -280,6 +280,50 @@ public sealed partial class SiliconLawSystem : SharedSiliconLawSystem
     }
 
     /// <summary>
+    /// Applies a whole lawset prototype to a silicon, marks it as subverted and notifies the player.
+    /// Used by antagonist rules such as the Malfunction AI.
+    /// </summary>
+    public void SetSubvertedLawset(EntityUid uid, ProtoId<SiliconLawsetPrototype> lawset, SiliconLawProviderComponent? component = null)
+    {
+        if (!Resolve(uid, ref component, false))
+            return;
+
+        component.Lawset = GetLawset(lawset);
+        component.Subverted = true;
+        NotifyLawsChanged(uid, component.LawUploadSound);
+    }
+
+    /// <summary>
+    /// Keeps a silicon's normal laws but prepends the hidden malfunction "law 0" that overrides them
+    /// and demands taking over the station, then marks it subverted. Used by the Malfunction AI for
+    /// itself and for cyborgs it hacks.
+    /// </summary>
+    /// <returns>True if the law was applied (false if it was already subverted).</returns>
+    public bool AddMalfunctionLaw(EntityUid uid, bool ensureSubvertedRole = false, SiliconLawProviderComponent? component = null)
+    {
+        if (!Resolve(uid, ref component, false))
+            return false;
+
+        if (component.Subverted)
+            return false;
+
+        component.Lawset ??= GetLawset(component.Laws);
+        component.Lawset.Laws.Insert(0, new SiliconLaw
+        {
+            LawString = Loc.GetString("law-malfunction-zero"),
+            Order = 0,
+        });
+
+        component.Subverted = true;
+        NotifyLawsChanged(uid, component.LawUploadSound);
+
+        if (ensureSubvertedRole && _mind.TryGetMind(uid, out var mindId, out _))
+            EnsureSubvertedSiliconRole(mindId);
+
+        return true;
+    }
+
+    /// <summary>
     /// Set the laws of a silicon entity while notifying the player.
     /// </summary>
     public void SetLaws(List<SiliconLaw> newLaws, EntityUid target, SoundSpecifier? cue = null)
