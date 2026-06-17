@@ -18,6 +18,11 @@ public sealed partial class MalfOverloadMachineEvent : EntityTargetActionEvent;
 public sealed partial class MalfBlackoutEvent : InstantActionEvent;
 
 /// <summary>
+/// Bolts and electrifies every airlock on the AI's grid for a short time.
+/// </summary>
+public sealed partial class MalfLockdownEvent : InstantActionEvent;
+
+/// <summary>
 /// Arms the Doomsday device. Handled by the Malfunction AI rule.
 /// </summary>
 public sealed partial class MalfDoomsdayEvent : InstantActionEvent;

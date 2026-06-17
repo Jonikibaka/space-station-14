@@ -10,6 +10,7 @@ malfunction-ai-role-greeting =
 
 malfunction-ai-announcement-sender = Самодиагностика
 malfunction-ai-announcement-blackout = Зафиксирован критический сбой в сети APC станции.
+malfunction-ai-announcement-lockdown = Перехват управления: все шлюзы заблокированы.
 malfunction-ai-announcement-doomsday-armed =
     ВНИМАНИЕ: из ядра ИИ запущена несанкционированная последовательность самоуничтожения.
     Расчётное время до детонации: { $time } секунд. Всем подразделениям — немедленно локализовать ИИ.
@@ -17,3 +18,6 @@ malfunction-ai-announcement-doomsday-tick =
     Последовательность самоуничтожения: осталось { $time } секунд.
 
 objective-issuer-malfunction-ai = [color=#c832e6]Повреждённое ядро[/color]
+
+alerts-malfunction-power-name = Вычислительная мощность
+alerts-malfunction-power-desc = Доступная вычислительная мощность. Взламывайте APC, чтобы получить больше.

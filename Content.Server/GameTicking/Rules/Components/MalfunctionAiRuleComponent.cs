@@ -51,16 +51,22 @@ public sealed partial class MalfunctionAiRuleComponent : Component
     public bool DoomsdayDetonated;
 
     /// <summary>
-    /// Seconds left on the Doomsday timer.
+    /// Seconds left on the Doomsday timer (TG uses 450s / 7.5 min).
     /// </summary>
     [DataField, ViewVariables(VVAccess.ReadWrite)]
-    public float DoomsdayRemaining = 270f;
+    public float DoomsdayRemaining = 450f;
 
     /// <summary>
     /// Announcement thresholds (in seconds remaining) that have not yet been broadcast.
     /// </summary>
     [DataField]
-    public List<int> DoomsdayAnnouncementsLeft = new() { 240, 180, 120, 60, 30, 10 };
+    public List<int> DoomsdayAnnouncementsLeft = new() { 300, 180, 120, 60, 30, 10 };
+
+    /// <summary>
+    /// Alert level set on the station when the Doomsday device is armed.
+    /// </summary>
+    [DataField]
+    public string DoomsdayAlertLevel = "delta";
 
     /// <summary>
     /// Total intensity for the Doomsday explosion.

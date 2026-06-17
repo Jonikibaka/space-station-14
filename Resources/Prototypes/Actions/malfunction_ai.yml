@@ -4,7 +4,7 @@
   parent: BaseAction
   id: ActionMalfHackApc
   name: Hack APC
-  description: Forces the APC's breaker off and dumps half of its battery. Costs 25 processing power.
+  description: Hacks a power controller, granting you 10 processing power. Each APC can only be hacked once.
   components:
   - type: Action
     priority: -1
@@ -23,12 +23,12 @@
   parent: BaseAction
   id: ActionMalfOverloadMachine
   name: Overload Machine
-  description: Channels excess current into a powered machine until it detonates. Costs 40 processing power.
+  description: After a short warning, detonates a powered machine. Costs 20 processing power.
   components:
   - type: Action
     priority: -2
     itemIconStyle: BigAction
-    useDelay: 30
+    useDelay: 15
     icon: Interface/Actions/malfunction.png
   - type: EntityTargetAction
     whitelist:
@@ -52,9 +52,25 @@
 
 - type: entity
   parent: BaseAction
+  id: ActionMalfLockdown
+  name: Hostile Station Lockdown
+  description: Bolts and electrifies every airlock on the station for 90 seconds. Costs 30 processing power.
+  components:
+  - type: Action
+    priority: -4
+    itemIconStyle: BigAction
+    useDelay: 120
+    icon:
+      sprite: Interface/Actions/actions_ai.rsi
+      state: ai_core
+  - type: InstantAction
+    event: !type:MalfLockdownEvent
+
+- type: entity
+  parent: BaseAction
   id: ActionMalfDoomsday
   name: Arm Doomsday Device
-  description: Begins an irreversible self-destruct sequence from your core. Single use. Costs 150 processing power.
+  description: Begins an irreversible self-destruct. Requires 8 hacked APCs. Single use. Costs 130 processing power.
   components:
   - type: Action
     priority: -10

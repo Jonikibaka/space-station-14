@@ -10,6 +10,7 @@ malfunction-ai-role-greeting =
 
 malfunction-ai-announcement-sender = Self-Diagnostic
 malfunction-ai-announcement-blackout = Critical power fault detected across the station's APC grid.
+malfunction-ai-announcement-lockdown = Security override: all airlocks have been sealed.
 malfunction-ai-announcement-doomsday-armed =
     WARNING: An unauthorized self-destruct sequence has been initiated from the AI core.
     Estimated time to detonation: { $time } seconds. All hands, contain the AI immediately.
@@ -17,3 +18,6 @@ malfunction-ai-announcement-doomsday-tick =
     Self-destruct sequence: { $time } seconds remaining.
 
 objective-issuer-malfunction-ai = [color=#c832e6]Corrupted Core[/color]
+
+alerts-malfunction-power-name = Processing Power
+alerts-malfunction-power-desc = Your available processing power. Hack APCs to gain more.

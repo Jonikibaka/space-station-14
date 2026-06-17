@@ -1,3 +1,4 @@
+using Content.Server.AlertLevel;
 using Content.Server.Antag;
 using Content.Server.Chat.Systems;
 using Content.Server.Explosion.EntitySystems;
@@ -19,6 +20,7 @@ namespace Content.Server.GameTicking.Rules;
 /// </summary>
 public sealed partial class MalfunctionAiRuleSystem : GameRuleSystem<MalfunctionAiRuleComponent>
 {
+    [Dependency] private AlertLevelSystem _alertLevel = default!;
     [Dependency] private AntagSelectionSystem _antag = default!;
     [Dependency] private ChatSystem _chat = default!;
     [Dependency] private CodeConditionSystem _codeCondition = default!;
@@ -62,6 +64,8 @@ public sealed partial class MalfunctionAiRuleSystem : GameRuleSystem<Malfunction
                     Loc.GetString("malfunction-ai-announcement-sender"),
                     playDefaultSound: true,
                     colorOverride: Color.Red);
+
+                _alertLevel.SetLevel(station.Value, rule.DoomsdayAlertLevel, playSound: true, announce: true, force: true);
             }
 
             return;
